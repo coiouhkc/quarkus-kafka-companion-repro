@@ -2,32 +2,31 @@ package org.acme;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.List;
-
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.kafka.InjectKafkaCompanion;
-import io.quarkus.test.kafka.KafkaCompanionResource;
-import io.smallrye.reactive.messaging.kafka.companion.ConsumerTask;
-import io.smallrye.reactive.messaging.kafka.companion.KafkaCompanion;
+import io.smallrye.reactive.messaging.kafka.Record;
+import io.smallrye.reactive.messaging.memory.InMemoryConnector;
+import io.smallrye.reactive.messaging.memory.InMemorySink;
+import io.smallrye.reactive.messaging.memory.InMemorySource;
+import jakarta.enterprise.inject.Any;
+import jakarta.inject.Inject;
 
-@QuarkusTestResource(KafkaCompanionResource.class)
 @QuarkusTest
 public class TransformerTest {
-    @InjectKafkaCompanion
-    KafkaCompanion companion;
+    @Inject
+    @Any
+    InMemoryConnector connector;
 
     @Test
     void dup() {
-        companion.produce(String.class, String.class).fromRecords(List.of(new ProducerRecord<>("in", "hi", "hello")));
+        InMemorySource<Record<String, String>> source = connector.source("in");
+        InMemorySink<Record<String, String>> sink = connector.sink("out");
 
-        ConsumerTask<String, String> task = companion.consume(String.class).fromTopics("out", 1);
+        source.send(Record.of("hi", "hello"));
 
-        task.awaitCompletion();
-
-        assertThat(task.count()).isEqualTo(1);
+        assertThat(sink.received()).hasSize(1);
+        assertThat(sink.received().get(0).getPayload().key()).isEqualTo("hi");
+        assertThat(sink.received().get(0).getPayload().value()).isEqualTo("hello|hello");
     }
 }
