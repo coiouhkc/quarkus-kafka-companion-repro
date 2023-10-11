@@ -10,7 +10,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 public class Transformer {
     @Incoming("in")
     @Outgoing("out")
-    public Record<String, String> dup(Record<String, String> record) {
-        return Record.of (record.key(), record.value() + "|" + record.value());
+    public Record<Key, Value> dup(Record<Key, Value> record) {
+        return Record.of (record.key(), new Value(record.value().getValue() + "|" + record.value().getValue()));
     }
 }

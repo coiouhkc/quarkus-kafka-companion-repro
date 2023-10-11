@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.List;
 
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.QuarkusTestResource;
@@ -20,11 +21,17 @@ public class TransformerTest {
     @InjectKafkaCompanion
     KafkaCompanion companion;
 
+    @BeforeEach
+    void setUp() {
+        companion.registerSerde(Key.class, new KeySerializer(), new KeyDeserializer());
+        companion.registerSerde(Value.class, new ValueSerializer(), new ValueDeserializer());
+    }
+
     @Test
     void dup() {
-        companion.produce(String.class, String.class).fromRecords(List.of(new ProducerRecord<>("in", "hi", "hello")));
+        companion.produce(Key.class, Value.class).fromRecords(List.of(new ProducerRecord<>("in", new Key("hi"), new Value("hello"))));
 
-        ConsumerTask<String, String> task = companion.consume(String.class).fromTopics("out", 1);
+        ConsumerTask<Key, Value> task = companion.consume(Key.class, Value.class).fromTopics("out", 1);
 
         task.awaitCompletion();
 
