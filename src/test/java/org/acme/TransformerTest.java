@@ -29,5 +29,30 @@ public class TransformerTest {
         task.awaitCompletion();
 
         assertThat(task.count()).isEqualTo(1);
+        assertThat(task.getFirstRecord().value()).isEqualTo("hello|hello");
+    }
+
+    @Test
+    void nil() {
+        companion.produce(String.class, String.class).fromRecords(List.of(new ProducerRecord<>("out", "hi", "hello")));
+
+        ConsumerTask<String, String> task = companion.consume(String.class).fromTopics("end", 1);
+
+        task.awaitCompletion();
+
+        assertThat(task.count()).isEqualTo(1);
+        assertThat(task.getFirstRecord().value()).isEqualTo("nil");
+    }
+
+    @Test
+    void startToEnd() {
+        companion.produce(String.class, String.class).fromRecords(List.of(new ProducerRecord<>("in", "hi", "hello")));
+
+        ConsumerTask<String, String> task = companion.consume(String.class).fromTopics("end", 1);
+
+        task.awaitCompletion();
+
+        assertThat(task.count()).isEqualTo(1);
+        assertThat(task.getFirstRecord().value()).isEqualTo("nil");
     }
 }
